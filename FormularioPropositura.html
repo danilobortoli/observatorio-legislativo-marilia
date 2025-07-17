@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      h2 {
+        color: #0070c0;
+        margin-top: 0;
+        border-bottom: 2px solid #8eb4e3;
+        padding-bottom: 10px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+      select, input, textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+      .info {
+        font-size: 12px;
+        color: #666;
+        font-style: italic;
+        margin-top: 5px;
+      }
+      .buttons {
+        margin-top: 20px;
+        text-align: right;
+      }
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      .btn-primary {
+        background-color: #0070c0;
+        color: white;
+      }
+      .btn-secondary {
+        background-color: #f0f0f0;
+        color: #333;
+        margin-right: 10px;
+      }
+      .alert {
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        display: none;
+      }
+      .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Registrar Nova Propositura</h2>
+      
+      <div id="alert" class="alert"></div>
+      
+      <div class="form-group">
+        <label for="vereador">Vereador:</label>
+        <select id="vereador" name="vereador" required>
+          <option value="">Selecione um vereador</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="tipo">Tipo de Propositura:</label>
+        <select id="tipo" name="tipo" required>
+          <option value="">Selecione o tipo</option>
+          <option value="Indicação">Indicação</option>
+          <option value="Requerimento">Requerimento</option>
+          <option value="Projeto de Lei">Projeto de Lei</option>
+          <option value="Votação">Votação</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <div id="infoPontuacao" class="info">Selecione um tipo de propositura para ver as diretrizes de pontuação</div>
+      </div>
+      
+      <div class="form-group">
+        <label for="descricao">Descrição:</label>
+        <textarea id="descricao" name="descricao" required placeholder="Digite o número e descrição da propositura..."></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="pontuacao">Pontuação:</label>
+        <input type="number" id="pontuacao" name="pontuacao" step="0.1" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="data">Data:</label>
+        <input type="date" id="data" name="data" required>
+      </div>
+      
+      <div class="buttons">
+        <button type="button" class="btn-secondary" onclick="fecharFormulario()">Cancelar</button>
+        <button type="button" class="btn-primary" onclick="salvarRegistro()">Salvar Propositura</button>
+      </div>
+    </div>
+    
+    <script>
+      // Quando o documento está pronto
+      document.addEventListener('DOMContentLoaded', function() {
+        carregarDadosFormulario();
+        
+        // Adicionar evento para atualizar informação de pontuação quando o tipo mudar
+        document.getElementById('tipo').addEventListener('change', atualizarInfoPontuacao);
+      });
+      
+      // Carrega os dados iniciais do formulário
+      function carregarDadosFormulario() {
+        google.script.run
+          .withSuccessHandler(preencherFormulario)
+          .withFailureHandler(exibirErro)
+          .obterDadosFormularioPropositura();
+      }
+      
+      // Preenche o formulário com os dados iniciais
+      function preencherFormulario(dados) {
+        document.getElementById('data').value = dados.dataAtual;
+        
+        // Preencher select de vereadores
+        const selectVereador = document.getElementById('vereador');
+        dados.vereadores.forEach(function(vereador) {
+          const option = document.createElement('option');
+          option.value = vereador;
+          option.textContent = vereador;
+          selectVereador.appendChild(option);
+        });
+      }
+      
+      // Atualiza informações de pontuação quando o tipo é alterado
+      function atualizarInfoPontuacao() {
+        const tipo = document.getElementById('tipo').value;
+        const infoPontuacao = document.getElementById('infoPontuacao');
+        const pontuacaoInput = document.getElementById('pontuacao');
+        
+        switch(tipo) {
+          case "Indicação":
+            infoPontuacao.textContent = "Pontuação: 0.1 básico, até 3 com princípios MATRA";
+            pontuacaoInput.value = 0.1;
+            break;
+          case "Requerimento":
+            infoPontuacao.textContent = "Pontuação: 0.1 básico, até 3 com princípios MATRA";
+            pontuacaoInput.value = 0.1;
+            break;
+          case "Projeto de Lei":
+            infoPontuacao.textContent = "Pontuação: 0.2 básico, -5 a +5 com princípios MATRA";
+            pontuacaoInput.value = 0.2;
+            break;
+          case "Votação":
+            infoPontuacao.textContent = "Pontuação: -4 a +4";
+            pontuacaoInput.value = 0;
+            break;
+          default:
+            infoPontuacao.textContent = "Selecione um tipo de propositura para ver as diretrizes de pontuação";
+            pontuacaoInput.value = "";
+            break;
+        }
+      }
+      
+      // Salva o registro
+      function salvarRegistro() {
+        // Validar campos
+        const vereador = document.getElementById('vereador').value;
+        const tipo = document.getElementById('tipo').value;
+        const descricao = document.getElementById('descricao').value;
+        const pontuacao = document.getElementById('pontuacao').value;
+        const data = document.getElementById('data').value;
+        
+        if (!vereador) {
+          exibirAviso("Selecione um vereador!", false);
+          return;
+        }
+        
+        if (!tipo) {
+          exibirAviso("Selecione um tipo de propositura!", false);
+          return;
+        }
+        
+        if (!descricao) {
+          exibirAviso("Digite uma descrição!", false);
+          return;
+        }
+        
+        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+          exibirAviso("Pontuação deve ser um valor numérico!", false);
+          return;
+        }
+        
+        if (!data) {
+          exibirAviso("Selecione uma data!", false);
+          return;
+        }
+        
+        // Recolher dados do formulário
+        const formData = {
+          vereador: vereador,
+          tipo: tipo,
+          descricao: descricao,
+          pontuacao: pontuacao,
+          data: data
+        };
+        
+        // Enviar para o servidor
+        google.script.run
+          .withSuccessHandler(function(response) {
+            if (response.success) {
+              exibirAviso(response.message, true);
+              document.getElementById('descricao').value = "";
+              atualizarInfoPontuacao();
+            } else {
+              exibirAviso(response.message, false);
+            }
+          })
+          .withFailureHandler(function(error) {
+            exibirAviso("Erro ao salvar: " + error.message, false);
+          })
+          .registrarAtividadePropositura(formData);
+      }
+      
+      // Exibe uma mensagem de aviso no formulário
+      function exibirAviso(mensagem, sucesso) {
+        const alertDiv = document.getElementById('alert');
+        alertDiv.textContent = mensagem;
+        alertDiv.style.display = 'block';
+        
+        if (sucesso) {
+          alertDiv.className = 'alert alert-success';
+          // Limpar mensagem após 3 segundos se for sucesso
+          setTimeout(function() {
+            alertDiv.style.display = 'none';
+          }, 3000);
+        } else {
+          alertDiv.className = 'alert alert-danger';
+        }
+      }
+      
+      // Exibe mensagem de erro
+      function exibirErro(erro) {
+        console.error('Erro:', erro);
+        exibirAviso("Erro ao carregar dados: " + erro, false);
+      }
+      
+      // Fecha o formulário
+      function fecharFormulario() {
+        google.script.host.close();
+      }
+    </script>
+  </body>
+</html>
