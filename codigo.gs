@@ -238,9 +238,33 @@ function criarDashboard() {
 
 // Função auxiliar para contar número de vereadores
 function countVereadores() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const wsVereadores = ss.getSheetByName("Vereadores");
-  return wsVereadores.getLastRow() - 1; // -1 para o cabeçalho
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const wsVereadores = ss.getSheetByName("Vereadores");
+    
+    // Verificar se há dados na planilha
+    const lastRow = wsVereadores.getLastRow();
+    if (lastRow <= 1) {
+      console.log("Planilha de vereadores vazia ou apenas com cabeçalho");
+      return 0;
+    }
+    
+    // Contar apenas linhas com dados válidos (nome não vazio)
+    const dadosVereadores = wsVereadores.getRange(2, 2, lastRow - 1, 1).getValues();
+    let contador = 0;
+    
+    for (let i = 0; i < dadosVereadores.length; i++) {
+      if (dadosVereadores[i][0] && dadosVereadores[i][0].toString().trim() !== '') {
+        contador++;
+      }
+    }
+    
+    console.log(`Contados ${contador} vereadores válidos`);
+    return contador;
+  } catch (e) {
+    console.error("Erro ao contar vereadores:", e.message);
+    return 0;
+  }
 }
 
 // Criar os botões do dashboard usando HTML Service
@@ -461,23 +485,43 @@ function atualizarDashboard() {
     const wsPontuacoes = ss.getSheetByName("Pontuações");
     const wsDashboard = ss.getSheetByName("Dashboard");
     
+    console.log("Iniciando atualização do dashboard");
+    
     // Recalcular pontuações
     recalcularPontuacoesRankings();
     
     // Obter dados dos vereadores
     const numVereadores = countVereadores();
+    console.log(`Número de vereadores: ${numVereadores}`);
+    
+    if (numVereadores <= 0) {
+      throw new Error("Nenhum vereador encontrado na planilha");
+    }
+    
     const dadosVereadores = wsVereadores.getRange(2, 1, numVereadores, 5).getValues();
     
     // Criar array de vereadores ordenados por pontuação
     const vereadorOrdenados = [];
     for (let i = 0; i < dadosVereadores.length; i++) {
-      vereadorOrdenados.push({
-        id: dadosVereadores[i][0],
-        nome: dadosVereadores[i][1],
-        partido: dadosVereadores[i][2],
-        pontuacao: dadosVereadores[i][3]
-      });
+      // Validar dados do vereador
+      const id = parseInt(dadosVereadores[i][0]);
+      const nome = dadosVereadores[i][1];
+      const partido = dadosVereadores[i][2];
+      const pontuacao = parseFloat(dadosVereadores[i][3]) || 0;
+      
+      if (!isNaN(id) && nome && nome.toString().trim() !== '') {
+        vereadorOrdenados.push({
+          id: id,
+          nome: nome,
+          partido: partido || '',
+          pontuacao: pontuacao
+        });
+      } else {
+        console.log(`Vereador inválido na linha ${i+2}: ID=${dadosVereadores[i][0]}, Nome=${nome}`);
+      }
     }
+    
+    console.log(`Vereadores válidos processados: ${vereadorOrdenados.length}`);
     
     // Ordenar por pontuação (maior para menor)
     vereadorOrdenados.sort((a, b) => b.pontuacao - a.pontuacao);
@@ -505,20 +549,21 @@ function atualizarDashboard() {
     if (contadorPontuados > 0) {
       wsDashboard.getRange("E9").setValue(somaPontuacoes / contadorPontuados);
       wsDashboard.getRange("H9").setValue(maxPontuacao);
-      wsDashboard.getRange("K9").setValue(minPontuacao);
+      wsDashboard.getRange("K9").setValue(minPontuacao === Infinity ? 0 : minPontuacao);
     } else {
       wsDashboard.getRange("E9").setValue(0);
       wsDashboard.getRange("H9").setValue(0);
       wsDashboard.getRange("K9").setValue(0);
     }
     
-    // Limpar ranking atual no dashboard
-    wsDashboard.getRange("A13:F22").clearContent();
+    // Limpar ranking atual no dashboard (expandir range para garantir limpeza completa)
+    wsDashboard.getRange("A13:F25").clearContent();
     
     // Preencher ranking no dashboard
     const dadosPontuacoes = wsPontuacoes.getDataRange().getValues();
+    console.log(`Linhas de pontuação: ${dadosPontuacoes.length}`);
     
-    for (let i = 0; i < 10 && i < vereadorOrdenados.length; i++) {
+    for (let i = 0; i < Math.min(10, vereadorOrdenados.length); i++) {
       if (vereadorOrdenados[i].pontuacao > 0) {
         // Posição
         wsDashboard.getRange(13 + i, 1).setValue(i + 1);
@@ -537,10 +582,12 @@ function atualizarDashboard() {
         let projetos = 0;
         
         for (let j = 1; j < dadosPontuacoes.length; j++) {
-          if (dadosPontuacoes[j][1] === vereadorOrdenados[i].id) {
-            if (dadosPontuacoes[j][2] === "Indicação") {
+          const pontuacaoVereadorID = parseInt(dadosPontuacoes[j][1]);
+          if (pontuacaoVereadorID === vereadorOrdenados[i].id) {
+            const tipo = dadosPontuacoes[j][2];
+            if (tipo === "Indicação") {
               indicacoes++;
-            } else if (dadosPontuacoes[j][2] === "Projeto de Lei") {
+            } else if (tipo === "Projeto de Lei") {
               projetos++;
             }
           }
@@ -553,83 +600,112 @@ function atualizarDashboard() {
     }
     
     // Atualizar gráficos
-    atualizarGraficos();
+    try {
+      atualizarGraficos();
+    } catch (e) {
+      console.error("Erro ao atualizar gráficos:", e.message);
+      // Continuar mesmo se houver erro nos gráficos
+    }
     
     // Atualizar data e hora
     wsDashboard.getRange("B4").setValue(new Date());
     
+    console.log("Dashboard atualizado com sucesso");
     SpreadsheetApp.getUi().alert("Dashboard atualizado com sucesso!");
   } catch (e) {
+    console.error("Erro ao atualizar dashboard:", e.message);
     SpreadsheetApp.getUi().alert("Erro ao atualizar dashboard: " + e.message);
+    throw e; // Re-lançar o erro para debug
   }
 }
 
 function recalcularPontuacoesRankings() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const wsVereadores = ss.getSheetByName("Vereadores");
-  const wsPontuacoes = ss.getSheetByName("Pontuações");
-  
-  // Determinar o número de vereadores
-  const numVereadores = countVereadores();
-  
-  // Limpar pontuações atuais
-  wsVereadores.getRange(2, 4, numVereadores, 1).setValue(0);
-  wsVereadores.getRange(2, 5, numVereadores, 1).setValue("-");
-  
-  // Verificar se há pontuações
-  const dadosPontuacoes = wsPontuacoes.getDataRange().getValues();
-  
-  if (dadosPontuacoes.length <= 1) {
-    return; // Sem dados de pontuação, não há o que recalcular
-  }
-  
-  // Array para armazenar pontuações por vereador
-  const pontuacoesVereadores = new Array(numVereadores).fill(0);
-  
-  // Somar todas as pontuações
-  for (let i = 1; i < dadosPontuacoes.length; i++) {
-    const vereadorID = dadosPontuacoes[i][1];
-    const pontuacao = dadosPontuacoes[i][4];
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const wsVereadores = ss.getSheetByName("Vereadores");
+    const wsPontuacoes = ss.getSheetByName("Pontuações");
     
-    if (vereadorID >= 1 && vereadorID <= numVereadores) {
-      pontuacoesVereadores[vereadorID - 1] += pontuacao;
+    // Determinar o número de vereadores
+    const numVereadores = countVereadores();
+    
+    if (numVereadores <= 0) {
+      console.log("Número de vereadores inválido:", numVereadores);
+      return;
     }
-  }
-  
-  // Atualizar pontuações na planilha
-  for (let i = 0; i < numVereadores; i++) {
-    wsVereadores.getRange(i + 2, 4).setValue(pontuacoesVereadores[i]);
-  }
-  
-  // Criar array para ranking
-  let rankData = [];
-  for (let i = 0; i < numVereadores; i++) {
-    rankData.push({
-      row: i + 2,
-      pontuacao: pontuacoesVereadores[i]
-    });
-  }
-  
-  // Ordenar por pontuação (maior para menor)
-  rankData.sort((a, b) => b.pontuacao - a.pontuacao);
-  
-  // Atribuir ranking
-  let rankAtual = 1;
-  let pontuacaoAnterior = null;
-  
-  for (let i = 0; i < rankData.length; i++) {
-    // Somente atribuir ranking para vereadores com pontuação
-    if (rankData[i].pontuacao > 0) {
-      // Verificar se é a mesma pontuação do anterior (empate)
-      if (i > 0 && rankData[i].pontuacao === pontuacaoAnterior) {
-        // Manter o mesmo ranking (empate)
-      } else {
-        rankAtual = i + 1;
+    
+    // Limpar pontuações atuais
+    wsVereadores.getRange(2, 4, numVereadores, 1).setValue(0);
+    wsVereadores.getRange(2, 5, numVereadores, 1).setValue("-");
+    
+    // Verificar se há pontuações
+    const dadosPontuacoes = wsPontuacoes.getDataRange().getValues();
+    
+    if (dadosPontuacoes.length <= 1) {
+      console.log("Sem dados de pontuação para recalcular");
+      return;
+    }
+    
+    // Array para armazenar pontuações por vereador
+    const pontuacoesVereadores = new Array(numVereadores).fill(0);
+    
+    // Somar todas as pontuações com validação
+    for (let i = 1; i < dadosPontuacoes.length; i++) {
+      const vereadorID = parseInt(dadosPontuacoes[i][1]);
+      const pontuacao = parseFloat(dadosPontuacoes[i][4]);
+      
+      // Validar se os dados são válidos
+      if (isNaN(vereadorID) || isNaN(pontuacao)) {
+        console.log(`Dados inválidos na linha ${i+1}: vereadorID=${dadosPontuacoes[i][1]}, pontuacao=${dadosPontuacoes[i][4]}`);
+        continue;
       }
       
-      wsVereadores.getRange(rankData[i].row, 5).setValue(rankAtual);
-      pontuacaoAnterior = rankData[i].pontuacao;
+      if (vereadorID >= 1 && vereadorID <= numVereadores) {
+        pontuacoesVereadores[vereadorID - 1] += pontuacao;
+      } else {
+        console.log(`ID de vereador fora do range válido: ${vereadorID}`);
+      }
     }
+    
+    // Atualizar pontuações na planilha
+    for (let i = 0; i < numVereadores; i++) {
+      wsVereadores.getRange(i + 2, 4).setValue(pontuacoesVereadores[i]);
+    }
+    
+    // Criar array para ranking
+    let rankData = [];
+    for (let i = 0; i < numVereadores; i++) {
+      rankData.push({
+        row: i + 2,
+        pontuacao: pontuacoesVereadores[i]
+      });
+    }
+    
+    // Ordenar por pontuação (maior para menor)
+    rankData.sort((a, b) => b.pontuacao - a.pontuacao);
+    
+    // Atribuir ranking
+    let rankAtual = 1;
+    let pontuacaoAnterior = null;
+    
+    for (let i = 0; i < rankData.length; i++) {
+      // Somente atribuir ranking para vereadores com pontuação
+      if (rankData[i].pontuacao > 0) {
+        // Verificar se é a mesma pontuação do anterior (empate)
+        if (i > 0 && rankData[i].pontuacao === pontuacaoAnterior) {
+          // Manter o mesmo ranking (empate)
+        } else {
+          rankAtual = i + 1;
+        }
+        
+        wsVereadores.getRange(rankData[i].row, 5).setValue(rankAtual);
+        pontuacaoAnterior = rankData[i].pontuacao;
+      }
+    }
+    
+    console.log("Recálculo de pontuações e rankings concluído com sucesso");
+  } catch (e) {
+    console.error("Erro ao recalcular pontuações e rankings:", e.message);
+    throw new Error("Falha no recálculo do ranking: " + e.message);
   }
 }
 
