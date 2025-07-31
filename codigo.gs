@@ -536,6 +536,16 @@ function registrarIndicacoesEmBloco() {
   SpreadsheetApp.getUi().showModalDialog(html, 'Registrar Indicações em Bloco');
 }
 
+// Registrar indicações em bloco - Modo Rápido
+function registrarIndicacoesRapido() {
+  const html = HtmlService.createHtmlOutputFromFile('FormularioIndicacoesRapido')
+    .setWidth(900)
+    .setHeight(700)
+    .setTitle('Indicações em Bloco - Modo Rápido');
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'Indicações em Bloco - Modo Rápido');
+}
+
 // Registrar propositura independente
 function registrarPropositura() {
   const html = HtmlService.createHtmlOutputFromFile('FormularioPropositura')
@@ -939,6 +949,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Registrar Nova Sessão', 'registrarNovaSessao')
     .addItem('Registrar Indicações em Bloco', 'registrarIndicacoesEmBloco')
+    .addItem('🚀 Indicações Rápidas', 'registrarIndicacoesRapido')
     .addItem('Registrar Propositura', 'registrarPropositura')
     .addItem('Atualizar Dashboard', 'atualizarDashboard')
     .addItem('Gerar Relatório', 'gerarRelatorio')

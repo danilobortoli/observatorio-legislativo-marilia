@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      h2 {
+        color: #0070c0;
+        margin-top: 0;
+        border-bottom: 2px solid #8eb4e3;
+        padding-bottom: 10px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+      select, input, textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      .info {
+        font-size: 12px;
+        color: #666;
+        font-style: italic;
+        margin-top: 5px;
+      }
+      .buttons {
+        margin-top: 20px;
+        text-align: right;
+      }
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 10px;
+      }
+      .btn-primary {
+        background-color: #0070c0;
+        color: white;
+      }
+      .btn-secondary {
+        background-color: #f0f0f0;
+        color: #333;
+      }
+      .btn-success {
+        background-color: #28a745;
+        color: white;
+      }
+      .btn-warning {
+        background-color: #ffc107;
+        color: #212529;
+      }
+      .alert {
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        display: none;
+      }
+      .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .alert-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+      }
+      .radio-group {
+        margin-bottom: 15px;
+      }
+      .radio-label {
+        font-weight: normal;
+        display: inline-block;
+        margin-right: 15px;
+      }
+      .quick-actions {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+      }
+      .quick-action {
+        flex: 1;
+        min-width: 150px;
+        padding: 10px;
+        border: 2px solid #ddd;
+        border-radius: 6px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+      }
+      .quick-action:hover {
+        border-color: #0070c0;
+        background-color: #e6f3ff;
+      }
+      .quick-action.selected {
+        border-color: #0070c0;
+        background-color: #0070c0;
+        color: white;
+      }
+      .quick-action h4 {
+        margin: 0 0 5px 0;
+        font-size: 14px;
+      }
+      .quick-action p {
+        margin: 0;
+        font-size: 11px;
+      }
+      .indicacoes-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 15px;
+        margin-top: 15px;
+      }
+      .indicacao-card {
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        padding: 15px;
+        background-color: #f8f9fa;
+        position: relative;
+      }
+      .indicacao-card:hover {
+        border-color: #0070c0;
+        box-shadow: 0 2px 8px rgba(0,123,255,0.1);
+      }
+      .indicacao-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .indicacao-numero {
+        background-color: #0070c0;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .indicacao-remove {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        font-size: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .indicacao-remove:hover {
+        background-color: #c82333;
+      }
+      .indicacao-field {
+        margin-bottom: 8px;
+      }
+      .indicacao-field label {
+        font-size: 11px;
+        font-weight: bold;
+        color: #666;
+        margin-bottom: 3px;
+      }
+      .indicacao-field input, .indicacao-field select {
+        font-size: 12px;
+        padding: 4px 6px;
+      }
+      .add-indicacao {
+        border: 2px dashed #ddd;
+        border-radius: 6px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+      }
+      .add-indicacao:hover {
+        border-color: #0070c0;
+        background-color: #e6f3ff;
+      }
+      .add-indicacao h4 {
+        margin: 0 0 5px 0;
+        color: #0070c0;
+      }
+      .add-indicacao p {
+        margin: 0;
+        font-size: 12px;
+        color: #666;
+      }
+      .processing {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #0070c0;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .summary {
+        background-color: #e6f3ff;
+        border: 1px solid #8eb4e3;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+      .summary h4 {
+        margin: 0 0 10px 0;
+        color: #0070c0;
+      }
+      .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+      }
+      .stat-item {
+        text-align: center;
+        padding: 8px;
+        background-color: white;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+      .stat-number {
+        font-size: 18px;
+        font-weight: bold;
+        color: #0070c0;
+      }
+      .stat-label {
+        font-size: 11px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>🚀 Indicações em Bloco - Modo Rápido</h2>
+      
+      <div id="alert" class="alert"></div>
+      
+      <!-- Configurações básicas -->
+      <div class="form-group">
+        <label>Tipo de Sessão:</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="tipoSessao" value="nova" checked onclick="mostrarSessao('nova')"> Nova Sessão
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="tipoSessao" value="existente" onclick="mostrarSessao('existente')"> Sessão Existente
+          </label>
+        </div>
+      </div>
+      
+      <div id="novaSessao" class="form-group">
+        <label for="sessaoID">ID da Nova Sessão:</label>
+        <input type="number" id="sessaoID" name="sessaoID" readonly>
+      </div>
+      
+      <div id="sessaoExistente" class="form-group" style="display: none;">
+        <label for="sessaoSelect">Selecione uma Sessão:</label>
+        <select id="sessaoSelect" name="sessaoSelect">
+          <option value="">Selecione uma sessão</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="data">Data da Sessão:</label>
+        <input type="date" id="data" name="data" required>
+      </div>
+      
+      <!-- Ações rápidas -->
+      <div class="form-group">
+        <label>Ações Rápidas:</label>
+        <div class="quick-actions">
+          <div class="quick-action" onclick="acaoRapida('todos')">
+            <h4>📋 Todos os Vereadores</h4>
+            <p>Adicionar indicação para todos</p>
+          </div>
+          <div class="quick-action" onclick="acaoRapida('partido')">
+            <h4>🏛️ Por Partido</h4>
+            <p>Selecionar por partido</p>
+          </div>
+          <div class="quick-action" onclick="acaoRapida('individual')">
+            <h4>👤 Individual</h4>
+            <p>Adicionar vereador por vereador</p>
+          </div>
+          <div class="quick-action" onclick="acaoRapida('importar')">
+            <h4>📥 Importar</h4>
+            <p>Colar dados de planilha</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Resumo -->
+      <div id="summary" class="summary" style="display: none;">
+        <h4>📊 Resumo das Indicações</h4>
+        <div class="summary-stats">
+          <div class="stat-item">
+            <div class="stat-number" id="totalIndicacoes">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="vereadoresUnicos">0</div>
+            <div class="stat-label">Vereadores</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="pontuacaoTotal">0.0</div>
+            <div class="stat-label">Pontuação Total</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number" id="pontuacaoMedia">0.0</div>
+            <div class="stat-label">Média</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Grid de indicações -->
+      <div id="indicacoesContainer">
+        <div class="indicacoes-grid" id="indicacoesGrid">
+          <!-- As indicações serão adicionadas aqui dinamicamente -->
+        </div>
+      </div>
+      
+      <div class="processing">
+        <div class="spinner"></div>
+        <p>Processando indicações...</p>
+      </div>
+      
+      <div class="buttons">
+        <button type="button" class="btn-warning" onclick="limparTudo()">Limpar Tudo</button>
+        <button type="button" class="btn-secondary" onclick="fecharFormulario()">Cancelar</button>
+        <button type="button" class="btn-success" onclick="validarDados()">Validar</button>
+        <button type="button" class="btn-primary" onclick="salvarIndicacoes()">Salvar Todas</button>
+      </div>
+    </div>
+    
+    <script>
+      let indicacoes = [];
+      let vereadores = [];
+      let proximoID = 1;
+      
+      // Quando o documento está pronto
+      document.addEventListener('DOMContentLoaded', function() {
+        carregarDadosFormulario();
+      });
+      
+      // Carrega os dados iniciais do formulário
+      function carregarDadosFormulario() {
+        google.script.run
+          .withSuccessHandler(preencherFormulario)
+          .withFailureHandler(exibirErro)
+          .obterDadosFormulario();
+      }
+      
+      // Preenche o formulário com os dados iniciais
+      function preencherFormulario(dados) {
+        document.getElementById('sessaoID').value = dados.proximoID;
+        document.getElementById('data').value = dados.dataAtual;
+        proximoID = dados.proximoID;
+        vereadores = dados.vereadores;
+        
+        // Preencher select de sessões existentes
+        const selectSessao = document.getElementById('sessaoSelect');
+        while (selectSessao.options.length > 1) {
+          selectSessao.remove(1);
+        }
+        
+        if (dados.sessoes && dados.sessoes.length > 0) {
+          dados.sessoes.forEach(function(sessao) {
+            const option = document.createElement('option');
+            option.value = sessao.id;
+            option.textContent = `Sessão ${sessao.id} - ${sessao.descricao} (${formatarData(sessao.data)})`;
+            selectSessao.appendChild(option);
+          });
+        }
+      }
+      
+      // Formatar data para exibição
+      function formatarData(data) {
+        const partes = data.split('-');
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      
+      // Alterna entre nova sessão e sessão existente
+      function mostrarSessao(tipo) {
+        if (tipo === 'nova') {
+          document.getElementById('novaSessao').style.display = 'block';
+          document.getElementById('sessaoExistente').style.display = 'none';
+        } else {
+          document.getElementById('novaSessao').style.display = 'none';
+          document.getElementById('sessaoExistente').style.display = 'block';
+        }
+      }
+      
+      // Ações rápidas
+      function acaoRapida(tipo) {
+        switch(tipo) {
+          case 'todos':
+            adicionarIndicacoesTodos();
+            break;
+          case 'partido':
+            selecionarPorPartido();
+            break;
+          case 'individual':
+            adicionarIndicacaoIndividual();
+            break;
+          case 'importar':
+            importarDados();
+            break;
+        }
+      }
+      
+      // Adicionar indicações para todos os vereadores
+      function adicionarIndicacoesTodos() {
+        if (vereadores.length === 0) {
+          exibirAviso('Nenhum vereador disponível.', false);
+          return;
+        }
+        
+        const descricao = prompt('Digite a descrição da indicação para todos os vereadores:');
+        if (!descricao) return;
+        
+        const pontuacao = prompt('Digite a pontuação (0.1 a 3.0):', '0.1');
+        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+          exibirAviso('Pontuação inválida.', false);
+          return;
+        }
+        
+        vereadores.forEach(vereador => {
+          adicionarIndicacao(vereador, descricao, parseFloat(pontuacao));
+        });
+        
+        exibirAviso(`${vereadores.length} indicações adicionadas com sucesso!`, true);
+      }
+      
+      // Selecionar por partido
+      function selecionarPorPartido() {
+        const partidos = [...new Set(vereadores.map(v => obterPartido(v)))];
+        const partido = prompt(`Selecione o partido:\n${partidos.join('\n')}`);
+        
+        if (!partido || !partidos.includes(partido)) {
+          exibirAviso('Partido inválido.', false);
+          return;
+        }
+        
+        const vereadoresPartido = vereadores.filter(v => obterPartido(v) === partido);
+        const descricao = prompt('Digite a descrição da indicação:');
+        if (!descricao) return;
+        
+        const pontuacao = prompt('Digite a pontuação (0.1 a 3.0):', '0.1');
+        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+          exibirAviso('Pontuação inválida.', false);
+          return;
+        }
+        
+        vereadoresPartido.forEach(vereador => {
+          adicionarIndicacao(vereador, descricao, parseFloat(pontuacao));
+        });
+        
+        exibirAviso(`${vereadoresPartido.length} indicações adicionadas para ${partido}!`, true);
+      }
+      
+      // Adicionar indicação individual
+      function adicionarIndicacaoIndividual() {
+        const vereador = prompt(`Selecione o vereador:\n${vereadores.join('\n')}`);
+        if (!vereador || !vereadores.includes(vereador)) {
+          exibirAviso('Vereador inválido.', false);
+          return;
+        }
+        
+        const descricao = prompt('Digite a descrição da indicação:');
+        if (!descricao) return;
+        
+        const pontuacao = prompt('Digite a pontuação (0.1 a 3.0):', '0.1');
+        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+          exibirAviso('Pontuação inválida.', false);
+          return;
+        }
+        
+        adicionarIndicacao(vereador, descricao, parseFloat(pontuacao));
+        exibirAviso('Indicação adicionada com sucesso!', true);
+      }
+      
+      // Importar dados
+      function importarDados() {
+        const dados = prompt('Cole os dados da planilha (formato: Vereador | Descrição | Pontuação):');
+        if (!dados) return;
+        
+        const linhas = dados.trim().split('\n');
+        let adicionadas = 0;
+        
+        linhas.forEach(linha => {
+          const partes = linha.split('|').map(p => p.trim());
+          if (partes.length >= 2) {
+            const vereador = partes[0];
+            const descricao = partes[1];
+            const pontuacao = partes[2] ? parseFloat(partes[2]) : 0.1;
+            
+            if (vereadores.includes(vereador)) {
+              adicionarIndicacao(vereador, descricao, pontuacao);
+              adicionadas++;
+            }
+          }
+        });
+        
+        exibirAviso(`${adicionadas} indicações importadas com sucesso!`, true);
+      }
+      
+      // Obter partido do vereador (simplificado)
+      function obterPartido(vereador) {
+        // Mapeamento simplificado - você pode expandir conforme necessário
+        const partidos = {
+          'Danilo da Saúde': 'PSDB',
+          'Dr. Elio Ajeka': 'PP',
+          'Fabiana Camarinha': 'PODE',
+          'Professor Galdino da Unimar': 'CIDADANIA',
+          'Guilherme Burcão': 'DC',
+          'João do Bar': 'PSD',
+          'Chico do Açougue': 'AVANTE',
+          'Luiz Eduardo Nardi': 'CIDADANIA',
+          'Marcos Custódio': 'PSDB',
+          'Mauro Cruz': 'SOLIDARIEDADE',
+          'Agente Federal Junior Féfin': 'UNIÃO',
+          'Delegada Rossana Camacho': 'PSD',
+          'Professora Daniela': 'PL',
+          'Thiaguinho': 'PP',
+          'Vânia Ramos': 'REPUBLICANOS',
+          'Wellington Corredato/Batata': 'PP',
+          'Delegado Wilson Damasceno': 'PL'
+        };
+        return partidos[vereador] || 'N/A';
+      }
+      
+      // Adicionar indicação ao grid
+      function adicionarIndicacao(vereador, descricao, pontuacao) {
+        const indicacao = {
+          id: Date.now() + Math.random(),
+          vereador: vereador,
+          descricao: descricao,
+          pontuacao: pontuacao
+        };
+        
+        indicacoes.push(indicacao);
+        renderizarIndicacoes();
+        atualizarResumo();
+      }
+      
+      // Remover indicação
+      function removerIndicacao(id) {
+        indicacoes = indicacoes.filter(i => i.id !== id);
+        renderizarIndicacoes();
+        atualizarResumo();
+      }
+      
+      // Renderizar indicações no grid
+      function renderizarIndicacoes() {
+        const grid = document.getElementById('indicacoesGrid');
+        grid.innerHTML = '';
+        
+        indicacoes.forEach((indicacao, index) => {
+          const card = document.createElement('div');
+          card.className = 'indicacao-card';
+          card.innerHTML = `
+            <div class="indicacao-header">
+              <div class="indicacao-numero">${index + 1}</div>
+              <button class="indicacao-remove" onclick="removerIndicacao(${indicacao.id})">×</button>
+            </div>
+            <div class="indicacao-field">
+              <label>Vereador:</label>
+              <select onchange="atualizarIndicacao(${indicacao.id}, 'vereador', this.value)">
+                ${vereadores.map(v => `<option value="${v}" ${v === indicacao.vereador ? 'selected' : ''}>${v}</option>`).join('')}
+              </select>
+            </div>
+            <div class="indicacao-field">
+              <label>Descrição:</label>
+              <input type="text" value="${indicacao.descricao}" onchange="atualizarIndicacao(${indicacao.id}, 'descricao', this.value)" placeholder="Descrição da indicação">
+            </div>
+            <div class="indicacao-field">
+              <label>Pontuação:</label>
+              <input type="number" step="0.1" min="0.1" max="3" value="${indicacao.pontuacao}" onchange="atualizarIndicacao(${indicacao.id}, 'pontuacao', parseFloat(this.value))">
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        
+        // Adicionar botão para nova indicação
+        const addCard = document.createElement('div');
+        addCard.className = 'add-indicacao';
+        addCard.onclick = () => adicionarIndicacaoIndividual();
+        addCard.innerHTML = `
+          <h4>+ Adicionar Indicação</h4>
+          <p>Clique para adicionar uma nova indicação</p>
+        `;
+        grid.appendChild(addCard);
+      }
+      
+      // Atualizar indicação
+      function atualizarIndicacao(id, campo, valor) {
+        const indicacao = indicacoes.find(i => i.id === id);
+        if (indicacao) {
+          indicacao[campo] = valor;
+          atualizarResumo();
+        }
+      }
+      
+      // Atualizar resumo
+      function atualizarResumo() {
+        if (indicacoes.length === 0) {
+          document.getElementById('summary').style.display = 'none';
+          return;
+        }
+        
+        document.getElementById('summary').style.display = 'block';
+        document.getElementById('totalIndicacoes').textContent = indicacoes.length;
+        
+        const vereadoresUnicos = [...new Set(indicacoes.map(i => i.vereador))];
+        document.getElementById('vereadoresUnicos').textContent = vereadoresUnicos.length;
+        
+        const pontuacaoTotal = indicacoes.reduce((sum, i) => sum + i.pontuacao, 0);
+        document.getElementById('pontuacaoTotal').textContent = pontuacaoTotal.toFixed(1);
+        
+        const pontuacaoMedia = pontuacaoTotal / indicacoes.length;
+        document.getElementById('pontuacaoMedia').textContent = pontuacaoMedia.toFixed(2);
+      }
+      
+      // Limpar tudo
+      function limparTudo() {
+        if (confirm('Tem certeza que deseja limpar todas as indicações?')) {
+          indicacoes = [];
+          renderizarIndicacoes();
+          atualizarResumo();
+          exibirAviso('Todas as indicações foram removidas.', true);
+        }
+      }
+      
+      // Validar dados
+      function validarDados() {
+        if (indicacoes.length === 0) {
+          exibirAviso('Nenhuma indicação para validar.', false);
+          return;
+        }
+        
+        const erros = [];
+        indicacoes.forEach((indicacao, index) => {
+          if (!indicacao.vereador) {
+            erros.push(`Indicação ${index + 1}: Vereador não selecionado`);
+          }
+          if (!indicacao.descricao || indicacao.descricao.trim() === '') {
+            erros.push(`Indicação ${index + 1}: Descrição vazia`);
+          }
+          if (indicacao.pontuacao < 0.1 || indicacao.pontuacao > 3) {
+            erros.push(`Indicação ${index + 1}: Pontuação inválida (${indicacao.pontuacao})`);
+          }
+        });
+        
+        if (erros.length > 0) {
+          exibirAviso('Erros encontrados:\n' + erros.join('\n'), false);
+        } else {
+          exibirAviso(`✅ Validação concluída!\n${indicacoes.length} indicações válidas.`, true);
+        }
+      }
+      
+      // Salvar indicações
+      function salvarIndicacoes() {
+        if (indicacoes.length === 0) {
+          exibirAviso('Nenhuma indicação para salvar.', false);
+          return;
+        }
+        
+        const data = document.getElementById('data').value;
+        if (!data) {
+          exibirAviso('Por favor, selecione a data da sessão.', false);
+          return;
+        }
+        
+        // Determinar o ID da sessão
+        let sessaoID;
+        const tipoSessao = document.querySelector('input[name="tipoSessao"]:checked').value;
+        
+        if (tipoSessao === 'nova') {
+          sessaoID = document.getElementById('sessaoID').value;
+        } else {
+          sessaoID = document.getElementById('sessaoSelect').value;
+          if (!sessaoID) {
+            exibirAviso('Por favor, selecione uma sessão existente.', false);
+            return;
+          }
+        }
+        
+        // Mostrar indicador de processamento
+        document.querySelector('.processing').style.display = 'block';
+        document.querySelector('.buttons').style.display = 'none';
+        
+        // Preparar dados para envio
+        const formData = {
+          sessaoID: sessaoID,
+          data: data,
+          indicacoes: indicacoes
+        };
+        
+        // Enviar para o servidor
+        google.script.run
+          .withSuccessHandler(function(response) {
+            document.querySelector('.processing').style.display = 'none';
+            document.querySelector('.buttons').style.display = 'block';
+            
+            if (response.success) {
+              exibirAviso(response.message, true);
+              // Limpar formulário após sucesso
+              setTimeout(function() {
+                indicacoes = [];
+                renderizarIndicacoes();
+                atualizarResumo();
+                carregarDadosFormulario();
+              }, 2000);
+            } else {
+              exibirAviso(response.message, false);
+            }
+          })
+          .withFailureHandler(function(error) {
+            document.querySelector('.processing').style.display = 'none';
+            document.querySelector('.buttons').style.display = 'block';
+            exibirAviso('Erro ao salvar: ' + error.message, false);
+          })
+          .registrarIndicacoesBlocoBackend(formData);
+      }
+      
+      // Exibe uma mensagem de aviso
+      function exibirAviso(mensagem, sucesso, tipo = null) {
+        const alertDiv = document.getElementById('alert');
+        alertDiv.textContent = mensagem;
+        alertDiv.style.display = 'block';
+        alertDiv.style.whiteSpace = 'pre-wrap';
+        
+        if (tipo === 'info') {
+          alertDiv.className = 'alert alert-info';
+        } else if (sucesso) {
+          alertDiv.className = 'alert alert-success';
+        } else {
+          alertDiv.className = 'alert alert-danger';
+        }
+        
+        // Auto-ocultar após alguns segundos se for sucesso
+        if (sucesso && tipo !== 'info') {
+          setTimeout(function() {
+            alertDiv.style.display = 'none';
+          }, 5000);
+        }
+      }
+      
+      // Exibe mensagem de erro
+      function exibirErro(erro) {
+        console.error('Erro:', erro);
+        exibirAviso('Erro ao carregar dados: ' + erro, false);
+      }
+      
+      // Fecha o formulário
+      function fecharFormulario() {
+        google.script.host.close();
+      }
+    </script>
+  </body>
+</html> 
