@@ -958,10 +958,7 @@ function onOpen() {
     .addItem('Sobre o Sistema', 'exibirSobre')
     .addToUi();
     
-  // Criar menu de teste
-  ui.createMenu('TESTE')
-    .addItem('Testar Sistema', 'testarSistema')
-    .addToUi();
+
     
   // Verificar se o sistema já foi inicializado
   if (!SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Vereadores").getRange("A1").getValue()) {
@@ -1059,104 +1056,7 @@ function exibirSobre() {
   SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Sobre');
 }
 
-// Script de teste para verificar o funcionamento do sistema
-function testarSistema() {
-  try {
-    console.log("Iniciando testes do sistema...");
-    
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    
-    // Teste 1: Verificar se todas as abas existem
-    const abasNecessarias = ["Dashboard", "Vereadores", "Sessões", "Pontuações", "Configurações"];
-    const abasExistentes = ss.getSheets().map(sheet => sheet.getName());
-    
-    console.log("Abas necessárias:", abasNecessarias);
-    console.log("Abas existentes:", abasExistentes);
-    
-    for (const aba of abasNecessarias) {
-      if (!abasExistentes.includes(aba)) {
-        throw new Error(`Aba "${aba}" não encontrada`);
-      }
-    }
-    console.log("✅ Todas as abas estão presentes");
-    
-    // Teste 2: Verificar dados dos vereadores
-    const wsVereadores = ss.getSheetByName("Vereadores");
-    const dadosVereadores = wsVereadores.getDataRange().getValues();
-    
-    if (dadosVereadores.length <= 1) {
-      throw new Error("Nenhum vereador encontrado na planilha");
-    }
-    
-    console.log(`✅ ${dadosVereadores.length - 1} vereadores encontrados`);
-    
-    // Teste 3: Verificar dashboard
-    const wsDashboard = ss.getSheetByName("Dashboard");
-    const titulo = wsDashboard.getRange("A1").getValue();
-    
-    if (!titulo || !titulo.includes("OBSERVATÓRIO LEGISLATIVO")) {
-      throw new Error("Dashboard não está configurado corretamente");
-    }
-    
-    console.log("✅ Dashboard configurado corretamente");
-    
-    // Teste 4: Verificar fórmulas de estatísticas
-    const mediaFormula = wsDashboard.getRange("E9").getFormula();
-    const maxFormula = wsDashboard.getRange("H9").getFormula();
-    
-    if (!mediaFormula.includes("AVERAGEIF") || !maxFormula.includes("MAX")) {
-      throw new Error("Fórmulas de estatísticas não estão corretas");
-    }
-    
-    console.log("✅ Fórmulas de estatísticas estão corretas");
-    
-    // Teste 5: Verificar se não há erros #ERROR!
-    const rangeRanking = wsDashboard.getRange("B13:D22");
-    const valoresRanking = rangeRanking.getValues();
-    
-    let temErro = false;
-    for (let i = 0; i < valoresRanking.length; i++) {
-      for (let j = 0; j < valoresRanking[i].length; j++) {
-        if (valoresRanking[i][j] === "#ERROR!") {
-          temErro = true;
-          console.log(`❌ Erro encontrado na célula ${String.fromCharCode(66+j)}${13+i}`);
-        }
-      }
-    }
-    
-    if (temErro) {
-      throw new Error("Ainda existem erros #ERROR! no ranking");
-    }
-    
-    console.log("✅ Nenhum erro #ERROR! encontrado");
-    
-    // Teste 6: Verificar cache
-    const dadosCache = obterDadosVereadores();
-    if (dadosCache.count === 0) {
-      throw new Error("Cache de vereadores não está funcionando");
-    }
-    
-    console.log(`✅ Cache funcionando: ${dadosCache.count} vereadores`);
-    
-    // Todos os testes passaram
-    console.log("🎉 Todos os testes passaram! Sistema funcionando corretamente.");
-    
-    SpreadsheetApp.getUi().alert(
-      "Teste Concluído",
-      "Todos os testes passaram! O sistema está funcionando corretamente.",
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-    
-  } catch (e) {
-    console.error("❌ Teste falhou:", e.message);
-    
-    SpreadsheetApp.getUi().alert(
-      "Teste Falhou",
-      "Erro encontrado: " + e.message + "\n\nUse MATRA → Reinicializar Sistema para corrigir.",
-      SpreadsheetApp.getUi().ButtonSet.OK
-    );
-  }
-}
+
 
 // =====================================================================
 // Funções para os formulários

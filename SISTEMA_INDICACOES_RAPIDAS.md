@@ -222,7 +222,7 @@ Se encontrar problemas:
 1. Use **MATRA** → **Reinicializar Sistema**
 2. Verifique se todos os vereadores estão cadastrados
 3. Confirme se a data da sessão está correta
-4. Use **TESTE** → **Testar Sistema**
+4. Verifique se todas as abas estão presentes (Dashboard, Vereadores, Sessões, Pontuações, Configurações)
 
 ## 🎉 Principais Inovações
 
