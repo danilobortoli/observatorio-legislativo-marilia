@@ -433,6 +433,16 @@ function registrarNovaSessao() {
   SpreadsheetApp.getUi().showModalDialog(html, 'Registrar Nova Atividade Legislativa');
 }
 
+// Registrar indicações em bloco
+function registrarIndicacoesEmBloco() {
+  const html = HtmlService.createHtmlOutputFromFile('FormularioIndicacoesBloco')
+    .setWidth(800)
+    .setHeight(600)
+    .setTitle('Registrar Indicações em Bloco');
+  
+  SpreadsheetApp.getUi().showModalDialog(html, 'Registrar Indicações em Bloco');
+}
+
 // Registrar propositura independente
 function registrarPropositura() {
   const html = HtmlService.createHtmlOutputFromFile('FormularioPropositura')
@@ -793,6 +803,7 @@ function onOpen() {
     .addItem('Inicializar Sistema', 'inicializarSistema')
     .addSeparator()
     .addItem('Registrar Nova Sessão', 'registrarNovaSessao')
+    .addItem('Registrar Indicações em Bloco', 'registrarIndicacoesEmBloco')
     .addItem('Registrar Propositura', 'registrarPropositura')
     .addItem('Atualizar Dashboard', 'atualizarDashboard')
     .addItem('Gerar Relatório', 'gerarRelatorio')
@@ -1072,6 +1083,125 @@ function registrarAtividade(formData) {
     return {
       success: false, 
       message: "Erro ao salvar: " + e.message
+    };
+  }
+}
+
+/**
+ * Registra indicações em bloco
+ * @param {Object} formData - Dados do formulário com informações das indicações
+ * @return {Object} Resultado da operação (sucesso/erro) 
+ */
+function registrarIndicacoesBlocoBackend(formData) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const wsSessoes = ss.getSheetByName("Sessões");
+    const wsVereadores = ss.getSheetByName("Vereadores");
+    const wsPontuacoes = ss.getSheetByName("Pontuações");
+    
+    // Ajustar a data para evitar problemas de fuso horário
+    const dataParts = formData.data.split('-');
+    const dataAjustada = new Date(dataParts[0], dataParts[1]-1, dataParts[2], 12, 0, 0);
+    
+    // Obter ID da sessão
+    const sessaoID = parseInt(formData.sessaoID);
+    
+    // Verificar se é nova sessão
+    const dadosSessoes = wsSessoes.getDataRange().getValues();
+    let sessaoExistente = false;
+    
+    for (let i = 1; i < dadosSessoes.length; i++) {
+      if (dadosSessoes[i][0] === sessaoID) {
+        sessaoExistente = true;
+        break;
+      }
+    }
+    
+    // Se for nova sessão, registrá-la
+    if (!sessaoExistente) {
+      const novaLinha = wsSessoes.getLastRow() + 1;
+      wsSessoes.getRange(novaLinha, 1).setValue(sessaoID);
+      wsSessoes.getRange(novaLinha, 2).setValue(dataAjustada);
+      wsSessoes.getRange(novaLinha, 3).setValue("Sessão de " + Utilities.formatDate(dataAjustada, Session.getScriptTimeZone(), "dd/MM/yyyy"));
+    }
+    
+    // Criar mapa de vereadores para otimizar busca
+    const numVereadores = countVereadores();
+    const dadosVereadores = wsVereadores.getRange(2, 1, numVereadores, 2).getValues();
+    const mapaVereadores = {};
+    
+    for (let i = 0; i < dadosVereadores.length; i++) {
+      mapaVereadores[dadosVereadores[i][1]] = dadosVereadores[i][0];
+    }
+    
+    // Processar cada indicação
+    let registrosProcessados = 0;
+    let erros = [];
+    
+    for (const indicacao of formData.indicacoes) {
+      try {
+        // Validar dados da indicação
+        if (!indicacao.vereador || !indicacao.descricao || indicacao.pontuacao === undefined) {
+          erros.push(`Indicação incompleta para ${indicacao.vereador || 'vereador não especificado'}`);
+          continue;
+        }
+        
+        const vereadorID = mapaVereadores[indicacao.vereador];
+        if (!vereadorID) {
+          erros.push(`Vereador não encontrado: ${indicacao.vereador}`);
+          continue;
+        }
+        
+        // Validar pontuação
+        const pontuacao = parseFloat(indicacao.pontuacao);
+        if (isNaN(pontuacao) || pontuacao < 0.1 || pontuacao > 3) {
+          erros.push(`Pontuação inválida para ${indicacao.vereador}: ${indicacao.pontuacao}`);
+          continue;
+        }
+        
+        // Registrar pontuação
+        const novaLinha = wsPontuacoes.getLastRow() + 1;
+        wsPontuacoes.getRange(novaLinha, 1).setValue(sessaoID);
+        wsPontuacoes.getRange(novaLinha, 2).setValue(vereadorID);
+        wsPontuacoes.getRange(novaLinha, 3).setValue("Indicação");
+        wsPontuacoes.getRange(novaLinha, 4).setValue(indicacao.descricao);
+        wsPontuacoes.getRange(novaLinha, 5).setValue(pontuacao);
+        wsPontuacoes.getRange(novaLinha, 6).setValue(dataAjustada);
+        
+        registrosProcessados++;
+        
+      } catch (e) {
+        erros.push(`Erro ao processar indicação: ${e.message}`);
+      }
+    }
+    
+    // Atualizar dashboard
+    if (registrosProcessados > 0) {
+      atualizarDashboard();
+    }
+    
+    // Retornar resultado
+    if (erros.length === 0) {
+      return {
+        success: true,
+        message: `${registrosProcessados} indicações registradas com sucesso!`
+      };
+    } else if (registrosProcessados > 0) {
+      return {
+        success: true,
+        message: `${registrosProcessados} indicações registradas. Erros encontrados: ${erros.join('; ')}`
+      };
+    } else {
+      return {
+        success: false,
+        message: `Nenhuma indicação foi registrada. Erros: ${erros.join('; ')}`
+      };
+    }
+    
+  } catch (e) {
+    return {
+      success: false,
+      message: "Erro ao processar indicações: " + e.message
     };
   }
 }

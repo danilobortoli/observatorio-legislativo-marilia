@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background-color: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      }
+      h2 {
+        color: #0070c0;
+        margin-top: 0;
+        border-bottom: 2px solid #8eb4e3;
+        padding-bottom: 10px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+      select, input, textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 200px;
+        font-family: monospace;
+      }
+      .info {
+        font-size: 12px;
+        color: #666;
+        font-style: italic;
+        margin-top: 5px;
+      }
+      .buttons {
+        margin-top: 20px;
+        text-align: right;
+      }
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        margin-left: 10px;
+      }
+      .btn-primary {
+        background-color: #0070c0;
+        color: white;
+      }
+      .btn-secondary {
+        background-color: #f0f0f0;
+        color: #333;
+      }
+      .btn-info {
+        background-color: #17a2b8;
+        color: white;
+      }
+      .alert {
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        display: none;
+      }
+      .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .alert-info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      .radio-group {
+        margin-bottom: 15px;
+      }
+      .radio-label {
+        font-weight: normal;
+        display: inline-block;
+        margin-right: 15px;
+      }
+      .example-format {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .processing {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #0070c0;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .import-options {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .import-option {
+        flex: 1;
+        padding: 15px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+      .import-option:hover {
+        border-color: #0070c0;
+        background-color: #f0f8ff;
+      }
+      .import-option.selected {
+        border-color: #0070c0;
+        background-color: #e6f3ff;
+      }
+      .import-option h4 {
+        margin: 0 0 5px 0;
+        color: #0070c0;
+      }
+      .import-option p {
+        margin: 0;
+        font-size: 12px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Registrar Indicações em Bloco</h2>
+      
+      <div id="alert" class="alert"></div>
+      
+      <div class="form-group">
+        <label>Tipo de Sessão:</label>
+        <div class="radio-group">
+          <label class="radio-label">
+            <input type="radio" name="tipoSessao" value="nova" checked onclick="mostrarSessao('nova')"> Nova Sessão
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="tipoSessao" value="existente" onclick="mostrarSessao('existente')"> Sessão Existente
+          </label>
+        </div>
+      </div>
+      
+      <div id="novaSessao" class="form-group">
+        <label for="sessaoID">ID da Nova Sessão:</label>
+        <input type="number" id="sessaoID" name="sessaoID" readonly>
+      </div>
+      
+      <div id="sessaoExistente" class="form-group" style="display: none;">
+        <label for="sessaoSelect">Selecione uma Sessão:</label>
+        <select id="sessaoSelect" name="sessaoSelect">
+          <option value="">Selecione uma sessão</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="data">Data da Sessão:</label>
+        <input type="date" id="data" name="data" required>
+      </div>
+      
+      <div class="form-group">
+        <label>Método de Entrada:</label>
+        <div class="import-options">
+          <div class="import-option selected" onclick="selecionarMetodo('manual')">
+            <h4>Entrada Manual</h4>
+            <p>Digite ou cole os dados no formato especificado</p>
+          </div>
+          <div class="import-option" onclick="selecionarMetodo('planilha')">
+            <h4>Copiar de Planilha</h4>
+            <p>Cole dados copiados do Excel/Sheets</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="indicacoesTexto">Indicações em Bloco:</label>
+        <textarea id="indicacoesTexto" name="indicacoesTexto" placeholder="Digite as indicações no formato especificado"></textarea>
+        
+        <div id="formatoManual" class="info">
+          <strong>Formato para entrada manual:</strong>
+          <div class="example-format">
+Nome do Vereador | Descrição da Indicação | Pontuação (0.1 a 3.0)<br>
+<br>
+Exemplo:<br>
+Danilo da Saúde | Melhoria na iluminação da Rua XV de Novembro | 0.1<br>
+Dr. Elio Ajeka | Instalação de redutor de velocidade na Av. República | 2.5<br>
+Fabiana Camarinha | Criação de programa de coleta seletiva no bairro Centro | 3.0
+          </div>
+        </div>
+        
+        <div id="formatoPlanilha" class="info" style="display: none;">
+          <strong>Formato para colar da planilha:</strong>
+          <div class="example-format">
+Cole diretamente os dados copiados de uma planilha com 3 colunas:<br>
+Coluna 1: Nome do Vereador<br>
+Coluna 2: Descrição da Indicação<br>
+Coluna 3: Pontuação (0.1 a 3.0)<br>
+<br>
+O sistema detectará automaticamente as colunas separadas por TAB.
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="pontuacaoPadrao">Pontuação Padrão (se não especificada):</label>
+        <input type="number" id="pontuacaoPadrao" name="pontuacaoPadrao" step="0.1" min="0.1" max="3" value="0.1">
+        <div class="info">Esta pontuação será aplicada às indicações sem pontuação especificada</div>
+      </div>
+      
+      <div class="processing">
+        <div class="spinner"></div>
+        <p>Processando indicações...</p>
+      </div>
+      
+      <div class="buttons">
+        <button type="button" class="btn-info" onclick="validarDados()">Validar Dados</button>
+        <button type="button" class="btn-secondary" onclick="fecharFormulario()">Cancelar</button>
+        <button type="button" class="btn-primary" onclick="salvarIndicacoes()">Salvar Indicações</button>
+      </div>
+    </div>
+    
+    <script>
+      let metodoSelecionado = 'manual';
+      
+      // Quando o documento está pronto
+      document.addEventListener('DOMContentLoaded', function() {
+        carregarDadosFormulario();
+      });
+      
+      // Carrega os dados iniciais do formulário
+      function carregarDadosFormulario() {
+        google.script.run
+          .withSuccessHandler(preencherFormulario)
+          .withFailureHandler(exibirErro)
+          .obterDadosFormulario();
+      }
+      
+      // Seleciona o método de entrada
+      function selecionarMetodo(metodo) {
+        metodoSelecionado = metodo;
+        
+        // Atualizar visual dos botões
+        document.querySelectorAll('.import-option').forEach(el => {
+          el.classList.remove('selected');
+        });
+        event.currentTarget.classList.add('selected');
+        
+        // Mostrar/ocultar instruções apropriadas
+        if (metodo === 'manual') {
+          document.getElementById('formatoManual').style.display = 'block';
+          document.getElementById('formatoPlanilha').style.display = 'none';
+          document.getElementById('indicacoesTexto').placeholder = 'Digite as indicações no formato especificado';
+        } else {
+          document.getElementById('formatoManual').style.display = 'none';
+          document.getElementById('formatoPlanilha').style.display = 'block';
+          document.getElementById('indicacoesTexto').placeholder = 'Cole aqui os dados copiados da planilha';
+        }
+      }
+      
+      // Alterna entre nova sessão e sessão existente
+      function mostrarSessao(tipo) {
+        if (tipo === 'nova') {
+          document.getElementById('novaSessao').style.display = 'block';
+          document.getElementById('sessaoExistente').style.display = 'none';
+        } else {
+          document.getElementById('novaSessao').style.display = 'none';
+          document.getElementById('sessaoExistente').style.display = 'block';
+        }
+      }
+      
+      // Preenche o formulário com os dados iniciais
+      function preencherFormulario(dados) {
+        document.getElementById('sessaoID').value = dados.proximoID;
+        document.getElementById('data').value = dados.dataAtual;
+        
+        // Preencher select de sessões existentes
+        const selectSessao = document.getElementById('sessaoSelect');
+        while (selectSessao.options.length > 1) {
+          selectSessao.remove(1);
+        }
+        
+        if (dados.sessoes && dados.sessoes.length > 0) {
+          dados.sessoes.forEach(function(sessao) {
+            const option = document.createElement('option');
+            option.value = sessao.id;
+            option.textContent = `Sessão ${sessao.id} - ${sessao.descricao} (${formatarData(sessao.data)})`;
+            selectSessao.appendChild(option);
+          });
+        }
+      }
+      
+      // Formatar data para exibição
+      function formatarData(data) {
+        const partes = data.split('-');
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      
+      // Valida os dados inseridos
+      function validarDados() {
+        const texto = document.getElementById('indicacoesTexto').value.trim();
+        
+        if (!texto) {
+          exibirAviso('Por favor, insira as indicações antes de validar.', false);
+          return;
+        }
+        
+        const indicacoes = parseIndicacoes(texto);
+        
+        if (indicacoes.length === 0) {
+          exibirAviso('Nenhuma indicação válida foi encontrada. Verifique o formato dos dados.', false);
+          return;
+        }
+        
+        // Mostrar resumo da validação
+        let mensagem = `Validação concluída:\n\n`;
+        mensagem += `✓ ${indicacoes.length} indicações encontradas\n`;
+        
+        // Verificar vereadores únicos
+        const vereadoresUnicos = [...new Set(indicacoes.map(i => i.vereador))];
+        mensagem += `✓ ${vereadoresUnicos.length} vereadores diferentes\n`;
+        
+        // Verificar pontuações
+        const comPontuacao = indicacoes.filter(i => i.pontuacao !== null).length;
+        const semPontuacao = indicacoes.length - comPontuacao;
+        
+        if (comPontuacao > 0) {
+          mensagem += `✓ ${comPontuacao} indicações com pontuação especificada\n`;
+        }
+        if (semPontuacao > 0) {
+          mensagem += `✓ ${semPontuacao} indicações usarão a pontuação padrão\n`;
+        }
+        
+        exibirAviso(mensagem, true, 'info');
+      }
+      
+      // Parse das indicações baseado no método selecionado
+      function parseIndicacoes(texto) {
+        const linhas = texto.trim().split('\n');
+        const indicacoes = [];
+        const pontuacaoPadrao = parseFloat(document.getElementById('pontuacaoPadrao').value) || 0.1;
+        
+        for (const linha of linhas) {
+          if (!linha.trim()) continue;
+          
+          let partes;
+          if (metodoSelecionado === 'manual') {
+            partes = linha.split('|').map(p => p.trim());
+          } else {
+            partes = linha.split('\t').map(p => p.trim());
+          }
+          
+          if (partes.length >= 2) {
+            const indicacao = {
+              vereador: partes[0],
+              descricao: partes[1],
+              pontuacao: partes[2] ? parseFloat(partes[2]) : pontuacaoPadrao
+            };
+            
+            // Validar dados básicos
+            if (indicacao.vereador && indicacao.descricao) {
+              indicacoes.push(indicacao);
+            }
+          }
+        }
+        
+        return indicacoes;
+      }
+      
+      // Salva as indicações
+      function salvarIndicacoes() {
+        const texto = document.getElementById('indicacoesTexto').value.trim();
+        const data = document.getElementById('data').value;
+        
+        if (!texto) {
+          exibirAviso('Por favor, insira as indicações.', false);
+          return;
+        }
+        
+        if (!data) {
+          exibirAviso('Por favor, selecione a data da sessão.', false);
+          return;
+        }
+        
+        // Determinar o ID da sessão
+        let sessaoID;
+        const tipoSessao = document.querySelector('input[name="tipoSessao"]:checked').value;
+        
+        if (tipoSessao === 'nova') {
+          sessaoID = document.getElementById('sessaoID').value;
+        } else {
+          sessaoID = document.getElementById('sessaoSelect').value;
+          if (!sessaoID) {
+            exibirAviso('Por favor, selecione uma sessão existente.', false);
+            return;
+          }
+        }
+        
+        // Parse das indicações
+        const indicacoes = parseIndicacoes(texto);
+        
+        if (indicacoes.length === 0) {
+          exibirAviso('Nenhuma indicação válida foi encontrada. Verifique o formato dos dados.', false);
+          return;
+        }
+        
+        // Mostrar indicador de processamento
+        document.querySelector('.processing').style.display = 'block';
+        document.querySelector('.buttons').style.display = 'none';
+        
+        // Preparar dados para envio
+        const formData = {
+          sessaoID: sessaoID,
+          data: data,
+          indicacoes: indicacoes
+        };
+        
+        // Enviar para o servidor
+        google.script.run
+          .withSuccessHandler(function(response) {
+            document.querySelector('.processing').style.display = 'none';
+            document.querySelector('.buttons').style.display = 'block';
+            
+            if (response.success) {
+              exibirAviso(response.message, true);
+              // Limpar formulário após sucesso
+              setTimeout(function() {
+                document.getElementById('indicacoesTexto').value = '';
+                carregarDadosFormulario(); // Recarregar dados para atualizar ID da sessão
+              }, 2000);
+            } else {
+              exibirAviso(response.message, false);
+            }
+          })
+          .withFailureHandler(function(error) {
+            document.querySelector('.processing').style.display = 'none';
+            document.querySelector('.buttons').style.display = 'block';
+            exibirAviso('Erro ao salvar: ' + error.message, false);
+          })
+          .registrarIndicacoesBlocoBackend(formData);
+      }
+      
+      // Exibe uma mensagem de aviso
+      function exibirAviso(mensagem, sucesso, tipo = null) {
+        const alertDiv = document.getElementById('alert');
+        alertDiv.textContent = mensagem;
+        alertDiv.style.display = 'block';
+        alertDiv.style.whiteSpace = 'pre-wrap';
+        
+        if (tipo === 'info') {
+          alertDiv.className = 'alert alert-info';
+        } else if (sucesso) {
+          alertDiv.className = 'alert alert-success';
+        } else {
+          alertDiv.className = 'alert alert-danger';
+        }
+        
+        // Auto-ocultar após alguns segundos se for sucesso
+        if (sucesso && tipo !== 'info') {
+          setTimeout(function() {
+            alertDiv.style.display = 'none';
+          }, 5000);
+        }
+      }
+      
+      // Exibe mensagem de erro
+      function exibirErro(erro) {
+        console.error('Erro:', erro);
+        exibirAviso('Erro ao carregar dados: ' + erro, false);
+      }
+      
+      // Fecha o formulário
+      function fecharFormulario() {
+        google.script.host.close();
+      }
+    </script>
+  </body>
+</html>
