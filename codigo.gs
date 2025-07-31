@@ -236,35 +236,68 @@ function criarDashboard() {
   sheet.autoResizeColumns(1, 12);
 }
 
-// Função auxiliar para contar número de vereadores
-function countVereadores() {
+// Cache para dados de vereadores para evitar múltiplas consultas
+let cacheVereadores = null;
+let cacheTimestamp = null;
+const CACHE_DURATION = 30000; // 30 segundos
+
+// Função otimizada para obter dados de vereadores
+function obterDadosVereadores() {
   try {
+    // Verificar se o cache ainda é válido
+    const agora = new Date().getTime();
+    if (cacheVereadores && cacheTimestamp && (agora - cacheTimestamp) < CACHE_DURATION) {
+      return cacheVereadores;
+    }
+    
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const wsVereadores = ss.getSheetByName("Vereadores");
     
-    // Verificar se há dados na planilha
     const lastRow = wsVereadores.getLastRow();
     if (lastRow <= 1) {
-      console.log("Planilha de vereadores vazia ou apenas com cabeçalho");
-      return 0;
+      cacheVereadores = { count: 0, dados: [] };
+      cacheTimestamp = agora;
+      return cacheVereadores;
     }
     
-    // Contar apenas linhas com dados válidos (nome não vazio)
-    const dadosVereadores = wsVereadores.getRange(2, 2, lastRow - 1, 1).getValues();
-    let contador = 0;
+    // Obter todos os dados de uma vez
+    const dadosCompletos = wsVereadores.getRange(2, 1, lastRow - 1, 5).getValues();
+    const dadosValidos = [];
     
-    for (let i = 0; i < dadosVereadores.length; i++) {
-      if (dadosVereadores[i][0] && dadosVereadores[i][0].toString().trim() !== '') {
-        contador++;
+    for (let i = 0; i < dadosCompletos.length; i++) {
+      const id = parseInt(dadosCompletos[i][0]);
+      const nome = dadosCompletos[i][1];
+      
+      if (!isNaN(id) && nome && nome.toString().trim() !== '') {
+        dadosValidos.push({
+          id: id,
+          nome: nome,
+          partido: dadosCompletos[i][2] || '',
+          pontuacao: parseFloat(dadosCompletos[i][3]) || 0,
+          ranking: dadosCompletos[i][4] || '-'
+        });
       }
     }
     
-    console.log(`Contados ${contador} vereadores válidos`);
-    return contador;
+    cacheVereadores = { count: dadosValidos.length, dados: dadosValidos };
+    cacheTimestamp = agora;
+    
+    return cacheVereadores;
   } catch (e) {
-    console.error("Erro ao contar vereadores:", e.message);
-    return 0;
+    console.error("Erro ao obter dados de vereadores:", e.message);
+    return { count: 0, dados: [] };
   }
+}
+
+// Função auxiliar simplificada para contar vereadores
+function countVereadores() {
+  return obterDadosVereadores().count;
+}
+
+// Função para limpar cache (usar após alterações na planilha)
+function limparCacheVereadores() {
+  cacheVereadores = null;
+  cacheTimestamp = null;
 }
 
 // Criar os botões do dashboard usando HTML Service
@@ -477,145 +510,125 @@ function registrarPropositura() {
   SpreadsheetApp.getUi().showModalDialog(html, 'Registrar Nova Propositura');
 }
 
-// Atualizar dashboard
+// Atualizar dashboard otimizado
 function atualizarDashboard() {
   try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const wsVereadores = ss.getSheetByName("Vereadores");
     const wsPontuacoes = ss.getSheetByName("Pontuações");
     const wsDashboard = ss.getSheetByName("Dashboard");
     
-    console.log("Iniciando atualização do dashboard");
+    console.log("Iniciando atualização otimizada do dashboard");
     
-    // Recalcular pontuações
+    // Recalcular pontuações (já otimizado com cache)
     recalcularPontuacoesRankings();
     
-    // Obter dados dos vereadores
-    const numVereadores = countVereadores();
-    console.log(`Número de vereadores: ${numVereadores}`);
+    // Obter dados dos vereadores do cache
+    const dadosVereadores = obterDadosVereadores();
     
-    if (numVereadores <= 0) {
+    if (dadosVereadores.count <= 0) {
       throw new Error("Nenhum vereador encontrado na planilha");
     }
     
-    const dadosVereadores = wsVereadores.getRange(2, 1, numVereadores, 5).getValues();
-    
-    // Criar array de vereadores ordenados por pontuação
-    const vereadorOrdenados = [];
-    for (let i = 0; i < dadosVereadores.length; i++) {
-      // Validar dados do vereador
-      const id = parseInt(dadosVereadores[i][0]);
-      const nome = dadosVereadores[i][1];
-      const partido = dadosVereadores[i][2];
-      const pontuacao = parseFloat(dadosVereadores[i][3]) || 0;
-      
-      if (!isNaN(id) && nome && nome.toString().trim() !== '') {
-        vereadorOrdenados.push({
-          id: id,
-          nome: nome,
-          partido: partido || '',
-          pontuacao: pontuacao
-        });
-      } else {
-        console.log(`Vereador inválido na linha ${i+2}: ID=${dadosVereadores[i][0]}, Nome=${nome}`);
-      }
-    }
-    
-    console.log(`Vereadores válidos processados: ${vereadorOrdenados.length}`);
+    // Os dados já vêm atualizados e validados do cache
+    const vereadorOrdenados = [...dadosVereadores.dados];
     
     // Ordenar por pontuação (maior para menor)
     vereadorOrdenados.sort((a, b) => b.pontuacao - a.pontuacao);
     
-    // Atualizar estatísticas no dashboard
-    const numSessoes = Math.max(0, ss.getSheetByName("Sessões").getLastRow() - 1);
-    wsDashboard.getRange("B9").setValue(numSessoes);
+    // Obter dados de pontuações apenas uma vez
+    const dadosPontuacoes = wsPontuacoes.getDataRange().getValues();
     
-    // Calcular estatísticas de pontuação
+    // Calcular estatísticas e dados do ranking em uma única passada
     let somaPontuacoes = 0;
     let maxPontuacao = 0;
     let minPontuacao = Infinity;
     let contadorPontuados = 0;
     
-    for (const vereador of vereadorOrdenados) {
+    // Contar tipos de atividades por vereador
+    const atividadesPorVereador = {};
+    
+    // Inicializar contadores
+    dadosVereadores.dados.forEach(vereador => {
+      atividadesPorVereador[vereador.id] = { indicacoes: 0, projetos: 0 };
+    });
+    
+    // Processar pontuações e contar atividades em uma única passada
+    for (let i = 1; i < dadosPontuacoes.length; i++) {
+      const vereadorID = parseInt(dadosPontuacoes[i][1]);
+      const tipo = dadosPontuacoes[i][2];
+      
+      if (!isNaN(vereadorID) && atividadesPorVereador[vereadorID]) {
+        if (tipo === "Indicação") {
+          atividadesPorVereador[vereadorID].indicacoes++;
+        } else if (tipo === "Projeto de Lei") {
+          atividadesPorVereador[vereadorID].projetos++;
+        }
+      }
+    }
+    
+    // Calcular estatísticas
+    vereadorOrdenados.forEach(vereador => {
       if (vereador.pontuacao > 0) {
         somaPontuacoes += vereador.pontuacao;
         maxPontuacao = Math.max(maxPontuacao, vereador.pontuacao);
         minPontuacao = Math.min(minPontuacao, vereador.pontuacao);
         contadorPontuados++;
       }
-    }
+    });
     
-    // Atualizar estatísticas no dashboard
-    if (contadorPontuados > 0) {
-      wsDashboard.getRange("E9").setValue(somaPontuacoes / contadorPontuados);
-      wsDashboard.getRange("H9").setValue(maxPontuacao);
-      wsDashboard.getRange("K9").setValue(minPontuacao === Infinity ? 0 : minPontuacao);
-    } else {
-      wsDashboard.getRange("E9").setValue(0);
-      wsDashboard.getRange("H9").setValue(0);
-      wsDashboard.getRange("K9").setValue(0);
-    }
+    // Preparar todas as atualizações do dashboard em lote
+    const atualizacoesDashboard = [
+      // Estatísticas gerais
+      [Math.max(0, ss.getSheetByName("Sessões").getLastRow() - 1)], // B9 - Total de Sessões
+      [contadorPontuados > 0 ? somaPontuacoes / contadorPontuados : 0], // E9 - Média
+      [maxPontuacao], // H9 - Máximo
+      [minPontuacao === Infinity ? 0 : minPontuacao] // K9 - Mínimo
+    ];
     
-    // Limpar ranking atual no dashboard (expandir range para garantir limpeza completa)
+    wsDashboard.getRange("B9").setValue(atualizacoesDashboard[0][0]);
+    wsDashboard.getRange("E9").setValue(atualizacoesDashboard[1][0]);
+    wsDashboard.getRange("H9").setValue(atualizacoesDashboard[2][0]);
+    wsDashboard.getRange("K9").setValue(atualizacoesDashboard[3][0]);
+    
+    // Limpar e preparar dados do ranking
     wsDashboard.getRange("A13:F25").clearContent();
     
-    // Preencher ranking no dashboard
-    const dadosPontuacoes = wsPontuacoes.getDataRange().getValues();
-    console.log(`Linhas de pontuação: ${dadosPontuacoes.length}`);
+    const rankingData = [];
+    const top10 = vereadorOrdenados.slice(0, 10).filter(v => v.pontuacao > 0);
     
-    for (let i = 0; i < Math.min(10, vereadorOrdenados.length); i++) {
-      if (vereadorOrdenados[i].pontuacao > 0) {
-        // Posição
-        wsDashboard.getRange(13 + i, 1).setValue(i + 1);
-        
-        // Nome do vereador
-        wsDashboard.getRange(13 + i, 2).setValue(vereadorOrdenados[i].nome);
-        
-        // Partido
-        wsDashboard.getRange(13 + i, 3).setValue(vereadorOrdenados[i].partido);
-        
-        // Pontuação
-        wsDashboard.getRange(13 + i, 4).setValue(vereadorOrdenados[i].pontuacao);
-        
-        // Contar indicações e projetos de lei
-        let indicacoes = 0;
-        let projetos = 0;
-        
-        for (let j = 1; j < dadosPontuacoes.length; j++) {
-          const pontuacaoVereadorID = parseInt(dadosPontuacoes[j][1]);
-          if (pontuacaoVereadorID === vereadorOrdenados[i].id) {
-            const tipo = dadosPontuacoes[j][2];
-            if (tipo === "Indicação") {
-              indicacoes++;
-            } else if (tipo === "Projeto de Lei") {
-              projetos++;
-            }
-          }
-        }
-        
-        // Indicações e Projetos
-        wsDashboard.getRange(13 + i, 5).setValue(indicacoes);
-        wsDashboard.getRange(13 + i, 6).setValue(projetos);
-      }
-    }
+    top10.forEach((vereador, index) => {
+      const atividades = atividadesPorVereador[vereador.id] || { indicacoes: 0, projetos: 0 };
+      rankingData.push([
+        index + 1, // Posição
+        vereador.nome, // Nome
+        vereador.partido, // Partido
+        vereador.pontuacao, // Pontuação
+        atividades.indicacoes, // Indicações
+        atividades.projetos // Projetos
+      ]);
+    });
     
-    // Atualizar gráficos
-    try {
-      atualizarGraficos();
-    } catch (e) {
-      console.error("Erro ao atualizar gráficos:", e.message);
-      // Continuar mesmo se houver erro nos gráficos
+    // Atualizar ranking em lote se houver dados
+    if (rankingData.length > 0) {
+      wsDashboard.getRange(13, 1, rankingData.length, 6).setValues(rankingData);
     }
     
     // Atualizar data e hora
     wsDashboard.getRange("B4").setValue(new Date());
     
-    console.log("Dashboard atualizado com sucesso");
+    // Atualizar gráficos (opcional, pode ser removido se causar lentidão)
+    try {
+      atualizarGraficos();
+    } catch (e) {
+      console.log("Gráficos não atualizados:", e.message);
+    }
+    
+    console.log("Dashboard atualizado com sucesso (otimizado)");
     SpreadsheetApp.getUi().alert("Dashboard atualizado com sucesso!");
   } catch (e) {
     console.error("Erro ao atualizar dashboard:", e.message);
     SpreadsheetApp.getUi().alert("Erro ao atualizar dashboard: " + e.message);
-    throw e; // Re-lançar o erro para debug
+    throw e;
   }
 }
 
@@ -625,84 +638,93 @@ function recalcularPontuacoesRankings() {
     const wsVereadores = ss.getSheetByName("Vereadores");
     const wsPontuacoes = ss.getSheetByName("Pontuações");
     
-    // Determinar o número de vereadores
-    const numVereadores = countVereadores();
+    // Obter dados de vereadores do cache
+    const dadosVereadores = obterDadosVereadores();
+    const numVereadores = dadosVereadores.count;
     
     if (numVereadores <= 0) {
-      console.log("Número de vereadores inválido:", numVereadores);
+      console.log("Nenhum vereador válido encontrado");
       return;
     }
-    
-    // Limpar pontuações atuais
-    wsVereadores.getRange(2, 4, numVereadores, 1).setValue(0);
-    wsVereadores.getRange(2, 5, numVereadores, 1).setValue("-");
     
     // Verificar se há pontuações
     const dadosPontuacoes = wsPontuacoes.getDataRange().getValues();
     
     if (dadosPontuacoes.length <= 1) {
       console.log("Sem dados de pontuação para recalcular");
+      // Limpar pontuações se não houver dados
+      wsVereadores.getRange(2, 4, numVereadores, 2).setValues(
+        new Array(numVereadores).fill([0, "-"])
+      );
+      limparCacheVereadores(); // Limpar cache após alteração
       return;
     }
     
-    // Array para armazenar pontuações por vereador
-    const pontuacoesVereadores = new Array(numVereadores).fill(0);
+    // Criar mapa de pontuações por ID de vereador
+    const pontuacoesPorID = {};
     
-    // Somar todas as pontuações com validação
+    // Inicializar com zero para todos os vereadores válidos
+    dadosVereadores.dados.forEach(vereador => {
+      pontuacoesPorID[vereador.id] = 0;
+    });
+    
+    // Somar pontuações por vereador
     for (let i = 1; i < dadosPontuacoes.length; i++) {
       const vereadorID = parseInt(dadosPontuacoes[i][1]);
       const pontuacao = parseFloat(dadosPontuacoes[i][4]);
       
-      // Validar se os dados são válidos
-      if (isNaN(vereadorID) || isNaN(pontuacao)) {
-        console.log(`Dados inválidos na linha ${i+1}: vereadorID=${dadosPontuacoes[i][1]}, pontuacao=${dadosPontuacoes[i][4]}`);
-        continue;
-      }
-      
-      if (vereadorID >= 1 && vereadorID <= numVereadores) {
-        pontuacoesVereadores[vereadorID - 1] += pontuacao;
-      } else {
-        console.log(`ID de vereador fora do range válido: ${vereadorID}`);
+      if (!isNaN(vereadorID) && !isNaN(pontuacao) && pontuacoesPorID.hasOwnProperty(vereadorID)) {
+        pontuacoesPorID[vereadorID] += pontuacao;
       }
     }
     
-    // Atualizar pontuações na planilha
-    for (let i = 0; i < numVereadores; i++) {
-      wsVereadores.getRange(i + 2, 4).setValue(pontuacoesVereadores[i]);
-    }
+    // Preparar dados para atualização em lote
+    const atualizacoesPontuacao = [];
+    const atualizacoesRanking = [];
     
     // Criar array para ranking
-    let rankData = [];
-    for (let i = 0; i < numVereadores; i++) {
-      rankData.push({
-        row: i + 2,
-        pontuacao: pontuacoesVereadores[i]
-      });
-    }
+    const rankData = dadosVereadores.dados.map((vereador, index) => ({
+      row: index + 2,
+      id: vereador.id,
+      pontuacao: pontuacoesPorID[vereador.id]
+    }));
     
     // Ordenar por pontuação (maior para menor)
     rankData.sort((a, b) => b.pontuacao - a.pontuacao);
     
-    // Atribuir ranking
+    // Calcular rankings
     let rankAtual = 1;
     let pontuacaoAnterior = null;
     
-    for (let i = 0; i < rankData.length; i++) {
-      // Somente atribuir ranking para vereadores com pontuação
-      if (rankData[i].pontuacao > 0) {
-        // Verificar se é a mesma pontuação do anterior (empate)
-        if (i > 0 && rankData[i].pontuacao === pontuacaoAnterior) {
-          // Manter o mesmo ranking (empate)
+    rankData.forEach((item, index) => {
+      // Pontuação
+      atualizacoesPontuacao.push([item.pontuacao]);
+      
+      // Ranking
+      let ranking = "-";
+      if (item.pontuacao > 0) {
+        if (index > 0 && item.pontuacao === pontuacaoAnterior) {
+          // Empate - manter ranking anterior
+          ranking = atualizacoesRanking[atualizacoesRanking.length - 1][0];
         } else {
-          rankAtual = i + 1;
+          rankAtual = index + 1;
+          ranking = rankAtual;
         }
-        
-        wsVereadores.getRange(rankData[i].row, 5).setValue(rankAtual);
-        pontuacaoAnterior = rankData[i].pontuacao;
+        pontuacaoAnterior = item.pontuacao;
       }
+      atualizacoesRanking.push([ranking]);
+    });
+    
+    // Atualizar planilha em lote (muito mais eficiente)
+    if (atualizacoesPontuacao.length > 0) {
+      wsVereadores.getRange(2, 4, numVereadores, 1).setValues(atualizacoesPontuacao);
+      wsVereadores.getRange(2, 5, numVereadores, 1).setValues(atualizacoesRanking);
     }
     
-    console.log("Recálculo de pontuações e rankings concluído com sucesso");
+    // Limpar cache após alterações
+    limparCacheVereadores();
+    
+    console.log("Recálculo otimizado concluído com sucesso");
   } catch (e) {
     console.error("Erro ao recalcular pontuações e rankings:", e.message);
     throw new Error("Falha no recálculo do ranking: " + e.message);
@@ -1148,7 +1170,8 @@ function registrarAtividade(formData) {
     wsPontuacoes.getRange(novaLinha, 5).setValue(pontuacao);
     wsPontuacoes.getRange(novaLinha, 6).setValue(dataAjustada);
     
-    // Atualizar dashboard
+    // Limpar cache e atualizar dashboard
+    limparCacheVereadores();
     atualizarDashboard();
     
     return {
@@ -1251,8 +1274,9 @@ function registrarIndicacoesBlocoBackend(formData) {
       }
     }
     
-    // Atualizar dashboard
+    // Limpar cache antes de atualizar dashboard
     if (registrosProcessados > 0) {
+      limparCacheVereadores();
       atualizarDashboard();
     }
     
@@ -1357,7 +1381,8 @@ function registrarAtividadePropositura(formData) {
     wsPontuacoes.getRange(novaLinha, 5).setValue(pontuacao);
     wsPontuacoes.getRange(novaLinha, 6).setValue(dataAjustada);
     
-    // Atualizar dashboard
+    // Limpar cache e atualizar dashboard
+    limparCacheVereadores();
     atualizarDashboard();
     
     return {
