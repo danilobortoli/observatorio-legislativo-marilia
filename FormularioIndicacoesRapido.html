@@ -72,6 +72,10 @@
         background-color: #ffc107;
         color: #212529;
       }
+      .btn-info {
+        background-color: #17a2b8;
+        color: white;
+      }
       .alert {
         padding: 10px;
         border-radius: 4px;
@@ -276,11 +280,54 @@
         font-size: 11px;
         color: #666;
       }
+      .bulk-form {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 15px;
+      }
+      .bulk-form h4 {
+        margin: 0 0 10px 0;
+        color: #0070c0;
+      }
+      .bulk-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr auto;
+        gap: 10px;
+        align-items: end;
+      }
+      .bulk-form-grid label {
+        font-size: 11px;
+        margin-bottom: 3px;
+      }
+      .bulk-form-grid input, .bulk-form-grid select {
+        font-size: 12px;
+        padding: 6px;
+      }
+      .bulk-add-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .bulk-add-btn:hover {
+        background-color: #218838;
+      }
+      .descricao-opcional {
+        font-size: 10px;
+        color: #666;
+        font-style: italic;
+      }
     </style>
   </head>
   <body>
     <div class="container">
-      <h2>🚀 Indicações em Bloco - Modo Rápido</h2>
+      <h2>⚡ Indicações em Bloco - Modo Ultra Rápido</h2>
       
       <div id="alert" class="alert"></div>
       
@@ -320,11 +367,11 @@
         <div class="quick-actions">
           <div class="quick-action" onclick="acaoRapida('todos')">
             <h4>📋 Todos os Vereadores</h4>
-            <p>Adicionar indicação para todos</p>
+            <p>Indicações para todos de uma vez</p>
           </div>
           <div class="quick-action" onclick="acaoRapida('partido')">
             <h4>🏛️ Por Partido</h4>
-            <p>Selecionar por partido</p>
+            <p>Indicações por partido específico</p>
           </div>
           <div class="quick-action" onclick="acaoRapida('individual')">
             <h4>👤 Individual</h4>
@@ -333,6 +380,35 @@
           <div class="quick-action" onclick="acaoRapida('importar')">
             <h4>📥 Importar</h4>
             <p>Colar dados de planilha</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Formulário em massa -->
+      <div class="bulk-form">
+        <h4>⚡ Adição Rápida - Sem Descrições</h4>
+        <div class="bulk-form-grid">
+          <div>
+            <label>Vereador:</label>
+            <select id="bulkVereador">
+              <option value="">Selecione o vereador</option>
+            </select>
+          </div>
+          <div>
+            <label>Número de Indicações:</label>
+            <input type="number" id="bulkQuantidade" min="1" max="50" value="1" placeholder="Ex: 3">
+          </div>
+          <div>
+            <label>Pontuação Total:</label>
+            <input type="number" id="bulkPontuacao" step="0.1" min="0.1" max="10" value="0.1" placeholder="Ex: 2.5">
+          </div>
+          <div>
+            <label>Descrição (Opcional):</label>
+            <input type="text" id="bulkDescricao" placeholder="Ex: Indicações gerais">
+            <div class="descricao-opcional">Deixe vazio para usar descrição padrão</div>
+          </div>
+          <div>
+            <button type="button" class="bulk-add-btn" onclick="adicionarIndicacaoRapida()">+ Adicionar</button>
           </div>
         </div>
       </div>
@@ -375,7 +451,7 @@
       <div class="buttons">
         <button type="button" class="btn-warning" onclick="limparTudo()">Limpar Tudo</button>
         <button type="button" class="btn-secondary" onclick="fecharFormulario()">Cancelar</button>
-        <button type="button" class="btn-success" onclick="validarDados()">Validar</button>
+        <button type="button" class="btn-info" onclick="validarDados()">Validar</button>
         <button type="button" class="btn-primary" onclick="salvarIndicacoes()">Salvar Todas</button>
       </div>
     </div>
@@ -404,6 +480,19 @@
         document.getElementById('data').value = dados.dataAtual;
         proximoID = dados.proximoID;
         vereadores = dados.vereadores;
+        
+        // Preencher select de vereadores
+        const selectVereador = document.getElementById('bulkVereador');
+        while (selectVereador.options.length > 1) {
+          selectVereador.remove(1);
+        }
+        
+        vereadores.forEach(function(vereador) {
+          const option = document.createElement('option');
+          option.value = vereador;
+          option.textContent = vereador;
+          selectVereador.appendChild(option);
+        });
         
         // Preencher select de sessões existentes
         const selectSessao = document.getElementById('sessaoSelect');
@@ -438,6 +527,45 @@
         }
       }
       
+      // Adicionar indicação rápida (sem descrições individuais)
+      function adicionarIndicacaoRapida() {
+        const vereador = document.getElementById('bulkVereador').value;
+        const quantidade = parseInt(document.getElementById('bulkQuantidade').value);
+        const pontuacaoTotal = parseFloat(document.getElementById('bulkPontuacao').value);
+        const descricaoGeral = document.getElementById('bulkDescricao').value.trim();
+        
+        if (!vereador) {
+          exibirAviso('Selecione um vereador.', false);
+          return;
+        }
+        
+        if (!quantidade || quantidade < 1 || quantidade > 50) {
+          exibirAviso('Quantidade deve ser entre 1 e 50.', false);
+          return;
+        }
+        
+        if (!pontuacaoTotal || pontuacaoTotal < 0.1 || pontuacaoTotal > 10) {
+          exibirAviso('Pontuação total deve ser entre 0.1 e 10.', false);
+          return;
+        }
+        
+        // Calcular pontuação por indicação
+        const pontuacaoPorIndicacao = pontuacaoTotal / quantidade;
+        
+        // Criar múltiplas indicações
+        for (let i = 1; i <= quantidade; i++) {
+          const descricao = descricaoGeral || `Indicação ${i} de ${quantidade}`;
+          adicionarIndicacao(vereador, descricao, pontuacaoPorIndicacao);
+        }
+        
+        // Limpar formulário
+        document.getElementById('bulkQuantidade').value = 1;
+        document.getElementById('bulkPontuacao').value = 0.1;
+        document.getElementById('bulkDescricao').value = '';
+        
+        exibirAviso(`${quantidade} indicações adicionadas para ${vereador}!`, true);
+      }
+      
       // Ações rápidas
       function acaoRapida(tipo) {
         switch(tipo) {
@@ -463,20 +591,32 @@
           return;
         }
         
-        const descricao = prompt('Digite a descrição da indicação para todos os vereadores:');
-        if (!descricao) return;
+        const quantidade = prompt('Digite o número de indicações por vereador:', '1');
+        if (!quantidade || isNaN(parseInt(quantidade))) {
+          exibirAviso('Quantidade inválida.', false);
+          return;
+        }
         
-        const pontuacao = prompt('Digite a pontuação (0.1 a 3.0):', '0.1');
-        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+        const pontuacaoTotal = prompt('Digite a pontuação total por vereador (0.1 a 10):', '0.1');
+        if (!pontuacaoTotal || isNaN(parseFloat(pontuacaoTotal))) {
           exibirAviso('Pontuação inválida.', false);
           return;
         }
         
+        const descricaoGeral = prompt('Digite a descrição geral (opcional):', '');
+        
+        const qtd = parseInt(quantidade);
+        const pontTotal = parseFloat(pontuacaoTotal);
+        const pontPorIndicacao = pontTotal / qtd;
+        
         vereadores.forEach(vereador => {
-          adicionarIndicacao(vereador, descricao, parseFloat(pontuacao));
+          for (let i = 1; i <= qtd; i++) {
+            const descricao = descricaoGeral || `Indicação ${i} de ${qtd}`;
+            adicionarIndicacao(vereador, descricao, pontPorIndicacao);
+          }
         });
         
-        exibirAviso(`${vereadores.length} indicações adicionadas com sucesso!`, true);
+        exibirAviso(`${vereadores.length * qtd} indicações adicionadas para todos os vereadores!`, true);
       }
       
       // Selecionar por partido
@@ -490,20 +630,32 @@
         }
         
         const vereadoresPartido = vereadores.filter(v => obterPartido(v) === partido);
-        const descricao = prompt('Digite a descrição da indicação:');
-        if (!descricao) return;
+        const quantidade = prompt('Digite o número de indicações por vereador:', '1');
+        if (!quantidade || isNaN(parseInt(quantidade))) {
+          exibirAviso('Quantidade inválida.', false);
+          return;
+        }
         
-        const pontuacao = prompt('Digite a pontuação (0.1 a 3.0):', '0.1');
-        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+        const pontuacaoTotal = prompt('Digite a pontuação total por vereador (0.1 a 10):', '0.1');
+        if (!pontuacaoTotal || isNaN(parseFloat(pontuacaoTotal))) {
           exibirAviso('Pontuação inválida.', false);
           return;
         }
         
+        const descricaoGeral = prompt('Digite a descrição geral (opcional):', '');
+        
+        const qtd = parseInt(quantidade);
+        const pontTotal = parseFloat(pontuacaoTotal);
+        const pontPorIndicacao = pontTotal / qtd;
+        
         vereadoresPartido.forEach(vereador => {
-          adicionarIndicacao(vereador, descricao, parseFloat(pontuacao));
+          for (let i = 1; i <= qtd; i++) {
+            const descricao = descricaoGeral || `Indicação ${i} de ${qtd}`;
+            adicionarIndicacao(vereador, descricao, pontPorIndicacao);
+          }
         });
         
-        exibirAviso(`${vereadoresPartido.length} indicações adicionadas para ${partido}!`, true);
+        exibirAviso(`${vereadoresPartido.length * qtd} indicações adicionadas para ${partido}!`, true);
       }
       
       // Adicionar indicação individual
@@ -514,22 +666,35 @@
           return;
         }
         
-        const descricao = prompt('Digite a descrição da indicação:');
-        if (!descricao) return;
+        const quantidade = prompt('Digite o número de indicações:', '1');
+        if (!quantidade || isNaN(parseInt(quantidade))) {
+          exibirAviso('Quantidade inválida.', false);
+          return;
+        }
         
-        const pontuacao = prompt('Digite a pontuação (0.1 a 3.0):', '0.1');
-        if (!pontuacao || isNaN(parseFloat(pontuacao))) {
+        const pontuacaoTotal = prompt('Digite a pontuação total (0.1 a 10):', '0.1');
+        if (!pontuacaoTotal || isNaN(parseFloat(pontuacaoTotal))) {
           exibirAviso('Pontuação inválida.', false);
           return;
         }
         
-        adicionarIndicacao(vereador, descricao, parseFloat(pontuacao));
-        exibirAviso('Indicação adicionada com sucesso!', true);
+        const descricaoGeral = prompt('Digite a descrição geral (opcional):', '');
+        
+        const qtd = parseInt(quantidade);
+        const pontTotal = parseFloat(pontuacaoTotal);
+        const pontPorIndicacao = pontTotal / qtd;
+        
+        for (let i = 1; i <= qtd; i++) {
+          const descricao = descricaoGeral || `Indicação ${i} de ${qtd}`;
+          adicionarIndicacao(vereador, descricao, pontPorIndicacao);
+        }
+        
+        exibirAviso(`${qtd} indicações adicionadas para ${vereador}!`, true);
       }
       
       // Importar dados
       function importarDados() {
-        const dados = prompt('Cole os dados da planilha (formato: Vereador | Descrição | Pontuação):');
+        const dados = prompt('Cole os dados da planilha (formato: Vereador | Quantidade | Pontuação Total | Descrição):');
         if (!dados) return;
         
         const linhas = dados.trim().split('\n');
@@ -537,14 +702,20 @@
         
         linhas.forEach(linha => {
           const partes = linha.split('|').map(p => p.trim());
-          if (partes.length >= 2) {
+          if (partes.length >= 3) {
             const vereador = partes[0];
-            const descricao = partes[1];
-            const pontuacao = partes[2] ? parseFloat(partes[2]) : 0.1;
+            const quantidade = parseInt(partes[1]);
+            const pontuacaoTotal = parseFloat(partes[2]);
+            const descricaoGeral = partes[3] || '';
             
-            if (vereadores.includes(vereador)) {
-              adicionarIndicacao(vereador, descricao, pontuacao);
-              adicionadas++;
+            if (vereadores.includes(vereador) && quantidade && pontuacaoTotal) {
+              const pontPorIndicacao = pontuacaoTotal / quantidade;
+              
+              for (let i = 1; i <= quantidade; i++) {
+                const descricao = descricaoGeral || `Indicação ${i} de ${quantidade}`;
+                adicionarIndicacao(vereador, descricao, pontPorIndicacao);
+                adicionadas++;
+              }
             }
           }
         });
